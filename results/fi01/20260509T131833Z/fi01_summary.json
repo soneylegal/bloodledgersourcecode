@@ -1,0 +1,150 @@
+{
+  "campaign_id": "FI-01",
+  "campaign_target": "BIO-02 (Burst errors / structural rearrangements)",
+  "timestamp_utc": "2026-05-09T13:18:37.552473+00:00",
+  "execution": {
+    "total_samples": 10000,
+    "batch_size": 10000,
+    "n_batches": 1,
+    "mode": "batched_online_accumulation"
+  },
+  "sla_g0": {
+    "alpha": 0.05,
+    "epsilon_target": 1e-11,
+    "a_target": 0.9999
+  },
+  "proof_obligations": {
+    "PO-1": {
+      "description": "Coding & Synchronization (epsilon_ch + epsilon_sync)",
+      "ucb_decode_fail": 0.0007821270439169561,
+      "target": 1e-11,
+      "pass": false,
+      "epsilon_ch_estimate": 0.0005006040814376294,
+      "epsilon_sync_estimate": 3.431310043095433e-05
+    },
+    "PO-2": {
+      "description": "Hybrid Verifier & Fail-Stop (epsilon_ver)",
+      "epsilon_ver_estimate": 0.0,
+      "p_false_accept_design": 1e-12,
+      "fail_stop_dominant": true
+    },
+    "PO-3": {
+      "description": "Consensus & N_eff (epsilon_cons)",
+      "n_nodes_nominal": 10,
+      "rho_bar": 0.010000147500000002,
+      "n_eff": 9.174300753317201,
+      "n_eff_ratio": 0.9174300753317202,
+      "beta_shared": 8e-07,
+      "epsilon_cons_estimate": 0.0
+    },
+    "PO-4": {
+      "description": "Key Governance (epsilon_key)",
+      "epsilon_key_estimate": 0.0
+    },
+    "PO-5": {
+      "description": "Operational & Adversarial (epsilon_ops, epsilon_adv)",
+      "epsilon_ops_estimate": 0.0,
+      "epsilon_adv_estimate": 0.0,
+      "lcb_availability": 0.999217872956083,
+      "a_target": 0.9999,
+      "pass": false
+    }
+  },
+  "epsilon_budget": {
+    "epsilon_total": 0.0005349171818685838,
+    "epsilon_target": 1e-11,
+    "margin": -0.0005349171718685838,
+    "margin_factor": 1.8694482695560074e-08,
+    "pass": false,
+    "per_domain": {
+      "epsilon_ch": 0.0005006040814376294,
+      "epsilon_sync": 3.431310043095433e-05,
+      "epsilon_ver": 0.0,
+      "epsilon_cons": 0.0,
+      "epsilon_key": 0.0,
+      "epsilon_ops": 0.0,
+      "epsilon_adv": 0.0
+    }
+  },
+  "parameters": {
+    "base": {
+      "p_mut_good": 0.0002,
+      "p_mut_bad": 0.06,
+      "p_gb": 0.0008,
+      "p_bg": 0.22,
+      "burst_start_bad": 0.025,
+      "burst_length_mean": 14.0,
+      "burst_force_flip": 0.98,
+      "base_infra_flip": 0.0001,
+      "infra_sensitivity": 0.03,
+      "noise_phi": 0.92,
+      "noise_amplitude": 0.18,
+      "noise_sigma": 0.055,
+      "noise_phase": 0.0,
+      "delta_t": 0.001,
+      "line_frequency_hz": 60.0
+    },
+    "proposal": {
+      "p_gb": 0.0032,
+      "p_bg": 0.154,
+      "burst_start_bad": 0.05
+    },
+    "simulation": {
+      "sample_count": 10000,
+      "sequence_length": 1024,
+      "decode_fail_ber_threshold": 0.085,
+      "decode_fail_burst_threshold": 88,
+      "checkpoint_interval": 500,
+      "seed": 20260421
+    }
+  },
+  "statistics": {
+    "probability_estimate": 0.0005006040814376272,
+    "variance_estimate": 2.929362612275478e-08,
+    "std_error": 0.0001711538083793486,
+    "ucb": 0.0007821270439169561,
+    "lcb_availability": 0.999217872956083,
+    "ess": 1532.5138852351322,
+    "ess_ratio": 0.15325138852351322,
+    "proposal_fail_rate": 0.013,
+    "relative_precision": 0.5623664946375495,
+    "mc_variance_under_proposal": 1.2830999999999998e-06,
+    "importance_sampling_efficiency_gain": 43.8013373497421
+  },
+  "convergence_criteria": {
+    "ess_min": 0.2,
+    "ess_ratio_actual": 0.15325138852351322,
+    "ess_pass": false,
+    "r_target": 0.05,
+    "relative_precision_actual": 0.5623664946375495,
+    "convergence_pass": false
+  },
+  "g1_verdict": {
+    "safety_ucb_pass": false,
+    "safety_ucb_value": 0.0007821270439169561,
+    "safety_ucb_target": 1e-11,
+    "liveness_lcb_pass": false,
+    "liveness_lcb_value": 0.999217872956083,
+    "liveness_lcb_target": 0.9999,
+    "epsilon_budget_pass": false,
+    "epsilon_budget_total": 0.0005349171818685838,
+    "n_eff_pass": true,
+    "n_eff_value": 9.174300753317201,
+    "n_eff_ratio": 0.9174300753317202,
+    "beta_shared_pass": true,
+    "beta_shared_value": 8e-07,
+    "ess_ratio_pass": false,
+    "ess_ratio_value": 0.15325138852351322,
+    "ess_ratio_target": 0.2,
+    "convergence_pass": false,
+    "relative_precision": 0.5623664946375495,
+    "r_target": 0.05,
+    "g1_go": false
+  },
+  "artifacts": {
+    "samples_csv": "results/fi01/20260509T131833Z/fi01_samples.csv",
+    "convergence_csv": "results/fi01/20260509T131833Z/fi01_convergence.csv",
+    "summary_json": "results/fi01/20260509T131833Z/fi01_summary.json",
+    "variance_plot_png": "results/fi01/20260509T131833Z/fi01_variance_convergence.png"
+  }
+}

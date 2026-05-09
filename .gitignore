@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Large raw sample dumps (evidence retained locally, not tracked in git)
+# Summary JSONs, convergence CSVs, and plots remain tracked.
+results/**/*_samples.csv
+
+# Temporary production logs
+results/*_production.log
