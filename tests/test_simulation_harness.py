@@ -49,7 +49,7 @@ class ImportanceSamplingStatisticsContractTest(unittest.TestCase):
 
         summary = importance_sampling_estimate(indicator, weights)
         self.assertAlmostEqual(summary.probability_estimate, float(np.mean(indicator)), places=12)
-        self.assertGreaterEqual(summary.ucb95, summary.probability_estimate)
+        self.assertGreaterEqual(summary.ucb, summary.probability_estimate)
 
     def test_convergence_series_returns_checkpoints(self) -> None:
         """Validate checkpoint generation for convergence tracking."""
