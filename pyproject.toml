@@ -1,0 +1,197 @@
+# ──────────────────────────────────────────────────────────────────────
+# Sanguine Ledger — pyproject.toml (Gate G1 Baseline)
+# © 2026 Davi Laurindo. Proprietary. All rights reserved.
+# ──────────────────────────────────────────────────────────────────────
+
+# ── Build System ─────────────────────────────────────────────────────
+[build-system]
+requires = ["setuptools>=75.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+# ── Project Metadata ─────────────────────────────────────────────────
+[project]
+name = "bioledger"
+version = "0.2.0"
+description = "Formal reliability engineering framework for DNA-based data storage — in-silico validation harness with importance sampling for rare-event analysis (ε_target = 1e-11)."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "LicenseRef-Proprietary"
+authors = [
+    { name = "Davi Laurindo" },
+]
+keywords = [
+    "dna-storage",
+    "reliability-engineering",
+    "importance-sampling",
+    "rare-event-simulation",
+    "mission-critical",
+    "bio-storage",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "Typing :: Typed",
+]
+
+# ── Runtime Dependencies (Computational Engine) ─────────────────────
+dependencies = [
+    "numpy>=1.26",
+    "scipy>=1.11",
+    "matplotlib>=3.8",
+]
+
+# ── Optional / Development Dependencies ──────────────────────────────
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.11",
+    "mypy>=1.15",
+    "numpy>=1.26",        # needed at type-check time for stubs
+]
+test = [
+    "pytest>=8.0",
+    "pytest-cov>=6.0",
+]
+# Convenience group: install everything for local development
+all = [
+    "bioledger[dev]",
+    "bioledger[test]",
+]
+
+# ── src-layout discovery ─────────────────────────────────────────────
+[tool.setuptools.packages.find]
+where = ["src"]
+
+# ── Console Scripts ──────────────────────────────────────────────────
+[project.scripts]
+sanguine-fi01 = "bioledger.campaign_fi01:main"
+
+# ═════════════════════════════════════════════════════════════════════
+#  STATIC ANALYSIS & CI/CD TOOL CONFIGURATION
+# ═════════════════════════════════════════════════════════════════════
+
+# ── Ruff (Linting + Formatting) ──────────────────────────────────────
+[tool.ruff]
+target-version = "py310"
+line-length = 120
+src = ["src", "tests", "simulations"]
+
+[tool.ruff.lint]
+select = [
+    "E",     # pycodestyle errors
+    "W",     # pycodestyle warnings
+    "F",     # pyflakes
+    "I",     # isort — import ordering
+    "N",     # pep8-naming
+    "UP",    # pyupgrade — enforce modern Python idioms
+    "B",     # flake8-bugbear — likely bugs & design issues
+    "C4",    # flake8-comprehensions — unnecessary list/dict calls
+    "SIM",   # flake8-simplify — simplifiable constructs
+    "TCH",   # flake8-type-checking — move type-only imports behind TYPE_CHECKING
+    "RUF",   # ruff-specific rules
+    "S",     # flake8-bandit — security-oriented checks
+    "C90",   # mccabe — cyclomatic complexity
+    "ANN",   # flake8-annotations — enforce type annotations
+    "D",     # pydocstyle — docstring conventions
+    "PT",    # flake8-pytest-style
+    "PIE",   # misc. lint (unnecessary pass, etc.)
+    "T20",   # flake8-print — flag print() in library code
+    "ERA",   # eradicate — commented-out code detection
+    "PL",    # pylint rules subset
+]
+ignore = [
+    "D100",  # missing module docstring (acceptable for __init__.py re-exports)
+    "D104",  # missing public package docstring
+    "ANN101", # deprecated: missing type annotation for `self`
+    "ANN102", # deprecated: missing type annotation for `cls`
+    "S101",  # use of assert — acceptable in test files
+    "T201",  # print() — acceptable in CLI entrypoints (simulations/)
+]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 12
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.isort]
+known-first-party = ["bioledger"]
+force-single-line = false
+combine-as-imports = true
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["S101", "ANN", "D"]
+"simulations/**/*.py" = ["T201", "ANN", "D"]
+
+# ── Mypy (Strict Static Typing) ─────────────────────────────────────
+[tool.mypy]
+python_version = "3.10"
+mypy_path = "src"
+packages = ["bioledger"]
+strict = true
+
+# Granular strict flags (explicit for auditability — these are implied
+# by strict=true but listed to document intent for IP review):
+warn_return_any = true
+warn_unused_configs = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+disallow_untyped_decorators = true
+disallow_any_generics = true
+check_untyped_defs = true
+no_implicit_optional = true
+no_implicit_reexport = true
+strict_equality = true
+extra_checks = true
+show_error_codes = true
+show_column_numbers = true
+
+[[tool.mypy.overrides]]
+module = [
+    "scipy.*",
+    "matplotlib.*",
+]
+ignore_missing_imports = true
+
+# ── Pytest ───────────────────────────────────────────────────────────
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "--tb=short",
+    "-ra",
+    "-q",
+]
+markers = [
+    "slow: marks tests requiring extended computation (deselect with '-m \"not slow\"')",
+    "campaign: full FI campaign execution (deselect with '-m \"not campaign\"')",
+]
+filterwarnings = [
+    "error",
+]
+
+# ── Coverage (pytest-cov) ────────────────────────────────────────────
+[tool.coverage.run]
+source = ["bioledger"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 80
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "if __name__ == .__main__.:",
+    "@overload",
+]
