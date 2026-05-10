@@ -54,7 +54,8 @@ class BioChannelSimulator:
     P_BYPASS_PHYSICAL: float = 1e-4
     # Stage 2: Computational bypass probability (ZKP false accept)
     P_BYPASS_COMPUTATIONAL: float = 1e-8
-    # Combined: P(false_accept) = P_bypass_physical * P_bypass_computational
+    # Combined false-accept probability (PO-2 design target):
+    # P(false_accept) = P_bypass_physical * P_bypass_computational
     # Ensures: P(false_accept) << P(false_abort) (fail-stop preferential)
 
     def __init__(
@@ -63,6 +64,7 @@ class BioChannelSimulator:
         proposal_parameters: ImportanceProposal,
         seed: int,
     ) -> None:
+        """Initialize the simulator with base and proposal channel models."""
         self.base = base_parameters.normalized()
         self.proposal = proposal_parameters
         self.rng = np.random.default_rng(seed)
@@ -123,13 +125,11 @@ class BioChannelSimulator:
         has_error = np.logical_or(eps_ch, eps_sync)
         decode_fail = has_error
 
-        # ---------------------------------------------------------------
         # Layer 3: Hybrid Verifier - Ultra-Fail-Stop (espec_G1 §2.5)
         # Two-stage verification with preferential silence:
         #   P(false_accept) = P_bypass_physical * P_bypass_computational
-        #   Guarantees: P(accept|error) << P(abort|error)
-        # ---------------------------------------------------------------
-        p_false_accept = self.P_BYPASS_PHYSICAL * self.P_BYPASS_COMPUTATIONAL
+        #   Guarantees: P(accept|error) << P(abort|error)  # noqa: ERA001
+        # -----------------------------------------------------------------
 
         # Stage 1: Physical marker screening (Toehold Switches / Barcodes)
         physical_draw = self.rng.random(n_samples)
@@ -238,7 +238,8 @@ class BioChannelSimulator:
             Boolean matrix indicating burst start positions.
         """
         draw = self.rng.random(states.shape)
-        return np.logical_and(states == 1, draw < burst_start_bad)
+        result: np.ndarray = np.logical_and(states == 1, draw < burst_start_bad)
+        return result
 
     def _build_burst_mask(self, burst_starts: np.ndarray, mean_length: float) -> np.ndarray:
         """Expand burst start indicators into contiguous burst spans.
@@ -299,7 +300,8 @@ class BioChannelSimulator:
         burst_draw = self.rng.random(states.shape)
         burst_flips = np.logical_and(burst_mask, burst_draw < self.base.burst_force_flip)
 
-        return np.logical_or(stochastic_flips, burst_flips)
+        result: np.ndarray = np.logical_or(stochastic_flips, burst_flips)
+        return result
 
     # -------------------------------------------------------------------
     # Layer 2: Infrastructure Noise
@@ -416,12 +418,13 @@ class BioChannelSimulator:
         p_gb = min(max(p_gb, 1e-12), 1.0 - 1e-12)
         p_bg = min(max(p_bg, 1e-12), 1.0 - 1e-12)
 
-        return (
+        log_likelihood: np.ndarray = (
             counts.n00 * np.log(1.0 - p_gb)
             + counts.n01 * np.log(p_gb)
             + counts.n10 * np.log(p_bg)
             + counts.n11 * np.log(1.0 - p_bg)
         )
+        return log_likelihood
 
     def _count_markov_transitions(self, states: np.ndarray) -> _TransitionCounts:
         """Count transition types for each sampled trajectory.
@@ -466,4 +469,7 @@ class BioChannelSimulator:
         bad_count = np.sum(bad_positions, axis=1).astype(np.float64)
         start_count = np.sum(starts_in_bad, axis=1).astype(np.float64)
 
-        return start_count * np.log(probability) + (bad_count - start_count) * np.log(1.0 - probability)
+        log_likelihood: np.ndarray = (
+            start_count * np.log(probability) + (bad_count - start_count) * np.log(1.0 - probability)
+        )
+        return log_likelihood

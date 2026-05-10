@@ -3,8 +3,8 @@
 from bioledger.config import ChannelParameters, ImportanceProposal, SimulationParameters
 from bioledger.simulator import BioChannelSimulator
 from bioledger.statistics import (
-    ALPHA,
     A_TARGET,
+    ALPHA,
     EPSILON_TARGET,
     Z_ALPHA,
     ImportanceSamplingSummary,

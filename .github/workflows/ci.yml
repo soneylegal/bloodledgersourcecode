@@ -1,0 +1,55 @@
+# ──────────────────────────────────────────────────────────────────────
+# Sanguine Ledger — Continuous Integration Pipeline (Gate G1)
+# © 2026 Davi Laurindo. Proprietary. All rights reserved.
+#
+# Enforces codebase integrity on every interaction with main:
+#   1. Ruff  — aggressive linting (imports, complexity, security, docstrings)
+#   2. Mypy  — strict static typing (no inference leaks in bio-storage engine)
+#   3. Pytest — in-silico mathematical validation (IS estimators, channel contracts)
+# ──────────────────────────────────────────────────────────────────────
+
+name: CI — Sanguine Ledger Validation Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Lint → Type Check → Test
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── 1. Checkout ──────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── 2. Python Setup ──────────────────────────────────────────────
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      # ── 3. Install Environment ───────────────────────────────────────
+      - name: Install dependencies (editable + dev + test)
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[all]"
+
+      # ── 4. Static Analysis: Ruff ─────────────────────────────────────
+      - name: Ruff — Lint & Import Audit
+        run: ruff check .
+
+      # ── 5. Static Analysis: Mypy ─────────────────────────────────────
+      - name: Mypy — Strict Type Contract Verification
+        run: mypy src/
+
+      # ── 6. Mathematical Validation: Pytest ───────────────────────────
+      - name: Pytest — In-Silico Validation Suite
+        run: pytest -v

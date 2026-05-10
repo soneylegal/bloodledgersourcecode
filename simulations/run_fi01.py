@@ -9,12 +9,6 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from pathlib import Path
-
-ROOT = Path(__file__).resolve().parents[1]
-SRC = ROOT / "src"
-if str(SRC) not in sys.path:
-    sys.path.insert(0, str(SRC))
 
 from bioledger.campaign_fi01 import FI01Campaign
 from bioledger.config import ChannelParameters, ImportanceProposal, SimulationParameters
@@ -37,7 +31,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--burst-threshold", type=int, default=88, help="Decode failure max burst threshold")
     parser.add_argument("--proposal-gb-scale", type=float, default=16.0, help="Scale factor for proposal p_gb")
     parser.add_argument("--proposal-bg-scale", type=float, default=0.4, help="Scale factor for proposal p_bg")
-    parser.add_argument("--proposal-burst-scale", type=float, default=6.0, help="Scale factor for proposal burst probability")
+    parser.add_argument(
+        "--proposal-burst-scale", type=float, default=6.0, help="Scale factor for proposal burst probability",
+    )
     return parser.parse_args()
 
 

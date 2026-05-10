@@ -22,7 +22,6 @@ from typing import Any
 import numpy as np
 from scipy import stats as sp_stats
 
-
 # ---------------------------------------------------------------------------
 # G0 Sealed SLA Constants (matriz_auditoria §2.5)
 # ---------------------------------------------------------------------------
@@ -188,8 +187,7 @@ def calculate_n_eff(n_nodes: int, rho_bar: float) -> float:
     """
     if n_nodes <= 0:
         return 0.0
-    if rho_bar < 0.0:
-        rho_bar = 0.0
+    rho_bar = max(rho_bar, 0.0)
     return float(n_nodes / (1.0 + (n_nodes - 1.0) * rho_bar))
 
 

@@ -22,7 +22,7 @@ import csv
 import gc
 import json
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -33,11 +33,11 @@ import numpy as np
 from bioledger.config import ChannelParameters, ImportanceProposal, SimulationParameters
 from bioledger.simulator import BioChannelSimulator
 from bioledger.statistics import (
-    ALPHA,
     A_TARGET,
+    ALPHA,
     EPSILON_TARGET,
-    ImportanceSamplingSummary,
     Z_ALPHA,
+    ImportanceSamplingSummary,
     beta_shared_total,
     calculate_n_eff,
     calculate_rho_bar,
@@ -46,8 +46,7 @@ from bioledger.statistics import (
 )
 
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt  # noqa: E402
-
+import matplotlib.pyplot as plt
 
 # ---------------------------------------------------------------------------
 # FI-01 Campaign constants (espec_G1 §6.3)
@@ -101,15 +100,9 @@ class _OnlineAccumulator:
     # Proposal fail count (unweighted)
     fail_count: int = 0
     # Per-domain weighted sums
-    eps_sums: dict[str, float] | None = None
+    eps_sums: dict[str, float] = field(default_factory=lambda: dict.fromkeys(_EPSILON_DOMAINS, 0.0))
     # Convergence checkpoints
-    checkpoints: list[dict[str, float]] | None = None
-
-    def __post_init__(self) -> None:
-        if self.eps_sums is None:
-            self.eps_sums = {d: 0.0 for d in _EPSILON_DOMAINS}
-        if self.checkpoints is None:
-            self.checkpoints = []
+    checkpoints: list[dict[str, float]] = field(default_factory=list)
 
 
 def _update_accumulator(
@@ -132,7 +125,6 @@ def _update_accumulator(
         checkpoint_interval: Interval for convergence checkpoints.
     """
     weighted = decode_fail.astype(np.float64) * weights
-    batch_n = weighted.size
 
     # ESS accumulators
     acc.sum_w += float(np.sum(weights))
@@ -245,6 +237,7 @@ class FI01Campaign:
         simulation_parameters: SimulationParameters,
         batch_size: int = DEFAULT_BATCH_SIZE,
     ) -> None:
+        """Initialize campaign with channel model and batch configuration."""
         self.base_parameters = base_parameters.normalized()
         self.proposal_parameters = proposal_parameters
         self.simulation_parameters = simulation_parameters.normalized()
@@ -442,7 +435,9 @@ class FI01Campaign:
                     "description": "Hybrid Verifier & Fail-Stop (epsilon_ver)",
                     "epsilon_ver_estimate": eps_estimates["epsilon_ver"],
                     "p_false_accept_design": 1e-12,
-                    "fail_stop_dominant": bool(eps_estimates["epsilon_ver"] < summary_stats.probability_estimate * 0.01),
+                    "fail_stop_dominant": bool(
+                        eps_estimates["epsilon_ver"] < summary_stats.probability_estimate * 0.01
+                    ),
                 },
                 "PO-3": {
                     "description": "Consensus & N_eff (epsilon_cons)",

@@ -61,7 +61,7 @@ class ChannelParameters:
     delta_t: float = 1.0 / 1000.0
     line_frequency_hz: float = 60.0
 
-    def normalized(self) -> "ChannelParameters":
+    def normalized(self) -> ChannelParameters:
         """Return a numerically safe copy with clamped probabilities.
 
         Returns:
@@ -114,7 +114,7 @@ class ImportanceProposal:
         gb_scale: float = 16.0,
         bg_scale: float = 0.4,
         burst_scale: float = 6.0,
-    ) -> "ImportanceProposal":
+    ) -> ImportanceProposal:
         """Create a proposal distribution tilted toward burst failures.
 
         Args:
@@ -161,7 +161,7 @@ class SimulationParameters:
     checkpoint_interval: int = 500
     seed: int = 20260421
 
-    def normalized(self) -> "SimulationParameters":
+    def normalized(self) -> SimulationParameters:
         """Return a numerically safe copy.
 
         Returns:
