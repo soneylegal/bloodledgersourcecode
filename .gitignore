@@ -6,6 +6,8 @@ __pycache__/
 *.egg-info/
 dist/
 build/
+.coverage
+htmlcov/
 
 # IDE
 .idea/
@@ -22,4 +24,5 @@ Thumbs.db
 results/**/*_samples.csv
 
 # Temporary production logs
+results/**/*.log
 results/*_production.log
