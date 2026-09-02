@@ -155,6 +155,38 @@ Claim final permitido somente após aprovação integral das POs e critérios de
 - **Progresso Gate G1**: 1 de 9 campanhas de injeção de falhas concluída e documentada em `relatorio_avancos_fi01_proximos_passos_g1.md`.
 - **Próximas Frentes**: Implementação ativa do *Outer ECC* (Camada 3) e execução das campanhas FI-02..FI-09.
 
+## Fundamentação teórica
+
+O Sanguine Ledger assenta sua arquitetura formal sobre pilares científicos e criptográficos consolidados na literatura internacional:
+
+### 1. Armazenamento de Dados em DNA e Códigos de Correção
+- **Erlich, Y., & Zielinski, D. (2017).** *"DNA Fountain enables a robust and efficient storage architecture."* **Science**, 355(6328), 950–954. [DOI: 10.1126/science.aaj2038](https://doi.org/10.1126/science.aaj2038).  
+  *Fundamentação*: Densidade de informação por nucleotídeo e emprego de códigos de fonte (Fountain codes / Luby Transform) para restauração determinística sob estresse de replicação (PCR).
+- **Church, G. M., Gao, Y., & Kosuri, S. (2012).** *"Next-generation digital information storage in DNA."* **Science**, 337(6102), 1628. [DOI: 10.1126/science.1226355](https://doi.org/10.1126/science.1226355).  
+  *Fundamentação*: Prova de conceito pioneira da viabilidade de sintetizar e endereçar blocos massivos de dados digitais em DNA.
+
+### 2. Marcadores Moleculares de Integridade (Biologia Sintética)
+- **Green, A. A., Silver, P. A., Collins, J. J., & Yin, P. (2014).** *"Toehold switches: de-novo-designed regulators of gene expression."* **Cell**, 159(4), 925–939. [DOI: 10.1016/j.cell.2014.10.002](https://doi.org/10.1016/j.cell.2014.10.002).  
+  *Fundamentação*: Engenharia de riborreguladores *de novo* (*Toehold Switches*) com alta ortogonalidade para implementação de circuitos lógicos bioquímicos e triagem *fail-stop* no meio físico.
+
+### 3. Termodinâmica da Confiabilidade e Custo Metabólico
+- **Hopfield, J. J. (1974).** *"Kinetic Proofreading: A New Mechanism for Reducing Errors in Biosynthetic Processes Requiring High Specificity."* **PNAS**, 71(10), 4135–4139. [DOI: 10.1073/pnas.71.10.4135](https://doi.org/10.1073/pnas.71.10.4135).  
+  *Fundamentação*: Acoplamento termodinâmico entre consumo metabólico (hidrólise de ATP) e redução exponencial da taxa de erro informacional ($\Delta G_{eff} / k_B T$).
+
+### 4. Modelagem de Ameaças e Engenharia de Segurança
+- **Shostack, A. (2014).** *Threat Modeling: Designing for Security*. John Wiley & Sons. ISBN: 978-1-118-80999-0.  
+  *Fundamentação*: Metodologia estruturada STRIDE/FMEA para mapeamento exaustivo de vetores de ataque, falhas sistemáticas e envelope formal de ameaças $\Theta$.
+
+### 5. Simulação de Eventos Raros e Importance Sampling
+- **Asmussen, S., & Glynn, P. W. (2007).** *Stochastic Simulation: Algorithms and Analysis*. Springer. [DOI: 10.1007/978-0-387-69033-9](https://doi.org/10.1007/978-0-387-69033-9).  
+  *Fundamentação*: Teoria matemática de simulação estocástica para eventos raros, controle de variância por *Importance Sampling* e critérios de convergência pelo tamanho amostral efetivo ($ESS/N$).
+
+### 6. Consenso Threshold e Verificação de Conhecimento Zero
+- **Shamir, A. (1979).** *"How to share a secret."* **Communications of the ACM**, 22(11), 612–613. [DOI: 10.1145/359168.359176](https://doi.org/10.1145/359168.359176).  
+  *Fundamentação*: Esquema criptográfico de divisão de segredos $(k, n)$ por interpolação polinomial com segurança teórica da informação para governança distribuída de chaves.
+- **Goldwasser, S., Micali, S., & Rackoff, C. (1989).** *"The knowledge complexity of interactive proof systems."* **SIAM Journal on Computing**, 18(1), 186–208. [DOI: 10.1137/0218012](https://doi.org/10.1137/0218012).  
+  *Fundamentação*: Formalização de Provas de Conhecimento Zero (*Zero-Knowledge Proofs - ZKP*) para validação computacional de integridade sem revelação do segredo.
+
 ---
 
 Se a confiabilidade de dados é um problema físico, então a segurança de missão crítica deve ser tratada como engenharia de energia, informação e controle de risco em sistema vivo.
