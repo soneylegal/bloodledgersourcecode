@@ -25,4 +25,5 @@ results/**/*_samples.csv
 
 # Temporary production logs
 results/**/*.log
-results/*_production.log.mypy_cache/
+results/*_production.log
+.mypy_cache/
