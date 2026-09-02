@@ -26,4 +26,8 @@ results/**/*_samples.csv
 # Temporary production logs
 results/**/*.log
 results/*_production.log
+
+# Testing & Tooling Cache
 .mypy_cache/
+.pytest_cache/
+.ruff_cache/
