@@ -164,26 +164,48 @@ O Sanguine Ledger assenta sua arquitetura formal sobre pilares científicos e cr
   *Fundamentação*: Densidade de informação por nucleotídeo e emprego de códigos de fonte (Fountain codes / Luby Transform) para restauração determinística sob estresse de replicação (PCR).
 - **Church, G. M., Gao, Y., & Kosuri, S. (2012).** *"Next-generation digital information storage in DNA."* **Science**, 337(6102), 1628. [DOI: 10.1126/science.1226355](https://doi.org/10.1126/science.1226355).  
   *Fundamentação*: Prova de conceito pioneira da viabilidade de sintetizar e endereçar blocos massivos de dados digitais em DNA.
+- **Shomorony, I., & Heckel, R. (2021).** *"DNA-Based Storage: Models and Fundamental Limits."* **IEEE Transactions on Information Theory**, 67(6), 3675–3689. [DOI: 10.1109/TIT.2021.3058966](https://doi.org/10.1109/TIT.2021.3058966).  
+  *Fundamentação*: Modelagem teórica da capacidade informacional de sistemas de armazenamento em DNA, incluindo limites fundamentais de taxa e confiabilidade sob ruído de síntese, amplificação e sequenciamento.
+- **Grass, R. N., Heckel, R., Puddu, M., Paunescu, D., & Stark, W. J. (2015).** *"Robust chemical preservation of digital information on DNA in silica with error-correcting codes."* **Angewandte Chemie International Edition**, 54(8), 2552–2555. [DOI: 10.1002/anie.201411378](https://doi.org/10.1002/anie.201411378).  
+  *Fundamentação*: Prova experimental de durabilidade de dados em DNA encapsulado em sílica com códigos Reed-Solomon, demonstrando recuperação sem erro após envelhecimento acelerado equivalente a milhares de anos.
 
-### 2. Marcadores Moleculares de Integridade (Biologia Sintética)
+### 2. Canal Correlacionado e Modelo de Burst Errors (Gilbert-Elliott)
+- **Gilbert, E. N. (1960).** *"Capacity of a burst-noise channel."* **Bell System Technical Journal**, 39(5), 1253–1265. [DOI: 10.1002/j.1538-7305.1960.tb03959.x](https://doi.org/10.1002/j.1538-7305.1960.tb03959.x).  
+  *Fundamentação*: Modelo fundacional de canal com memória em dois estados (Good/Bad) por cadeia de Markov, base matemática do Digital Twin do Sanguine Ledger para modelagem de burst errors correlacionados no substrato biológico.
+- **Elliott, E. O. (1963).** *"Estimates of error rates for codes on burst-noise channels."* **Bell System Technical Journal**, 42(5), 1977–1997. [DOI: 10.1002/j.1538-7305.1963.tb00955.x](https://doi.org/10.1002/j.1538-7305.1963.tb00955.x).  
+  *Fundamentação*: Extensão do modelo Gilbert com parametrização de taxas de erro por estado, permitindo calibração empírica do canal não-IID contra dados de simulação e experimentais.
+
+### 3. Marcadores Moleculares de Integridade (Biologia Sintética)
 - **Green, A. A., Silver, P. A., Collins, J. J., & Yin, P. (2014).** *"Toehold switches: de-novo-designed regulators of gene expression."* **Cell**, 159(4), 925–939. [DOI: 10.1016/j.cell.2014.10.002](https://doi.org/10.1016/j.cell.2014.10.002).  
   *Fundamentação*: Engenharia de riborreguladores *de novo* (*Toehold Switches*) com alta ortogonalidade para implementação de circuitos lógicos bioquímicos e triagem *fail-stop* no meio físico.
 
-### 3. Termodinâmica da Confiabilidade e Custo Metabólico
+### 4. Termodinâmica da Confiabilidade e Custo Metabólico
 - **Hopfield, J. J. (1974).** *"Kinetic Proofreading: A New Mechanism for Reducing Errors in Biosynthetic Processes Requiring High Specificity."* **PNAS**, 71(10), 4135–4139. [DOI: 10.1073/pnas.71.10.4135](https://doi.org/10.1073/pnas.71.10.4135).  
   *Fundamentação*: Acoplamento termodinâmico entre consumo metabólico (hidrólise de ATP) e redução exponencial da taxa de erro informacional ($\Delta G_{eff} / k_B T$).
+- **Landauer, R. (1961).** *"Irreversibility and heat generation in the computing process."* **IBM Journal of Research and Development**, 5(3), 183–191. [DOI: 10.1147/rd.53.0183](https://doi.org/10.1147/rd.53.0183).  
+  *Fundamentação*: Piso termodinâmico fundamental para operações de apagamento/correção informacional ($E_{min,bit} = k_B T \ln 2$), que limita o custo energético mínimo de reparo por bit e fundamenta o acoplamento confiabilidade–energia do modelo metabólico.
 
-### 4. Modelagem de Ameaças e Engenharia de Segurança
+### 5. Modelagem de Ameaças e Engenharia de Segurança
 - **Shostack, A. (2014).** *Threat Modeling: Designing for Security*. John Wiley & Sons. ISBN: 978-1-118-80999-0.  
   *Fundamentação*: Metodologia estruturada STRIDE/FMEA para mapeamento exaustivo de vetores de ataque, falhas sistemáticas e envelope formal de ameaças $\Theta$.
 
-### 5. Simulação de Eventos Raros e Importance Sampling
+### 6. Causa Comum e Confiabilidade de Sistemas Redundantes
+- **Mosleh, A., Fleming, K. N., Parry, G. W., Paula, H. M., Worledge, D. H., & Rasmuson, D. M. (1988).** *"Procedures for treating common cause failures in safety and reliability studies."* **NUREG/CR-4780**, EPRI NP-5613. U.S. Nuclear Regulatory Commission.  
+  *Fundamentação*: Procedimento padrão da engenharia de confiabilidade nuclear para quantificação de falhas de causa comum pelo modelo beta-factor ($\beta_{shared} \to \bar\rho \to N_{eff}$), adotado no Sanguine Ledger para controle de correlação residual entre nós redundantes.
+
+### 7. Simulação de Eventos Raros e Importance Sampling
 - **Asmussen, S., & Glynn, P. W. (2007).** *Stochastic Simulation: Algorithms and Analysis*. Springer. [DOI: 10.1007/978-0-387-69033-9](https://doi.org/10.1007/978-0-387-69033-9).  
   *Fundamentação*: Teoria matemática de simulação estocástica para eventos raros, controle de variância por *Importance Sampling* e critérios de convergência pelo tamanho amostral efetivo ($ESS/N$).
 
-### 6. Consenso Threshold e Verificação de Conhecimento Zero
+### 8. Consenso Distribuído Tolerante a Falhas
+- **Dwork, C., Lynch, N. A., & Stockmeyer, L. (1988).** *"Consensus in the presence of partial synchrony."* **Journal of the ACM**, 35(2), 288–323. [DOI: 10.1145/42282.42283](https://doi.org/10.1145/42282.42283).  
+  *Fundamentação*: Teoria fundacional de consenso sob sincronia parcial, demonstrando condições necessárias e suficientes para convergência de protocolos distribuídos — base teórica da Camada 4 (consenso com quorum e commit/abort) do Digital Twin.
+
+### 9. Governança de Chaves e Verificação de Conhecimento Zero
 - **Shamir, A. (1979).** *"How to share a secret."* **Communications of the ACM**, 22(11), 612–613. [DOI: 10.1145/359168.359176](https://doi.org/10.1145/359168.359176).  
   *Fundamentação*: Esquema criptográfico de divisão de segredos $(k, n)$ por interpolação polinomial com segurança teórica da informação para governança distribuída de chaves.
+- **Feldman, P. (1987).** *"A practical scheme for non-interactive verifiable secret sharing."* **Proceedings of the 28th IEEE Symposium on Foundations of Computer Science (FOCS)**, 427–438. [DOI: 10.1109/SFCS.1987.4](https://doi.org/10.1109/SFCS.1987.4).  
+  *Fundamentação*: Extensão do esquema de Shamir com verificabilidade não-interativa dos shares via comprometimento criptográfico, permitindo detecção de shares corrompidos sem comunicação adicional entre participantes.
 - **Goldwasser, S., Micali, S., & Rackoff, C. (1989).** *"The knowledge complexity of interactive proof systems."* **SIAM Journal on Computing**, 18(1), 186–208. [DOI: 10.1137/0218012](https://doi.org/10.1137/0218012).  
   *Fundamentação*: Formalização de Provas de Conhecimento Zero (*Zero-Knowledge Proofs - ZKP*) para validação computacional de integridade sem revelação do segredo.
 
