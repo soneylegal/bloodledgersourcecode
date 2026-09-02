@@ -111,9 +111,9 @@ class ImportanceProposal:
     @staticmethod
     def from_base(
         base: ChannelParameters,
-        gb_scale: float = 16.0,
-        bg_scale: float = 0.4,
-        burst_scale: float = 6.0,
+        gb_scale: float = 2.2,
+        bg_scale: float = 0.85,
+        burst_scale: float = 1.8,
     ) -> ImportanceProposal:
         """Create a proposal distribution tilted toward burst failures.
 

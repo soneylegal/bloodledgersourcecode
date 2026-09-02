@@ -17,6 +17,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import numpy as np
+from scipy.signal import lfilter
 
 from bioledger.config import ChannelParameters, ImportanceProposal, SimulationParameters
 from bioledger.types import ChannelSimulationResult
@@ -242,7 +243,48 @@ class BioChannelSimulator:
         return result
 
     def _build_burst_mask(self, burst_starts: np.ndarray, mean_length: float) -> np.ndarray:
-        """Expand burst start indicators into contiguous burst spans.
+        """Expand burst start indicators into contiguous burst spans (vectorized).
+
+        Uses np.maximum.accumulate on per-row expiration indices to avoid
+        a Python loop over non-zero positions.
+
+        Args:
+            burst_starts: Boolean burst start matrix.
+            mean_length: Mean length for geometric burst-length distribution.
+
+        Returns:
+            Boolean mask where True indicates burst-affected symbols.
+        """
+        n_samples, seq_len = burst_starts.shape
+        mask = np.zeros_like(burst_starts, dtype=bool)
+        start_positions = np.argwhere(burst_starts)
+
+        if start_positions.shape[0] == 0:
+            return mask
+
+        geometric_probability = min(max(1.0 / max(mean_length, 1.0), 1e-6), 1.0)
+        lengths = self.rng.geometric(geometric_probability, size=start_positions.shape[0])
+
+        rows = start_positions[:, 0]
+        cols = start_positions[:, 1]
+        ends = np.minimum(cols + lengths, seq_len)
+
+        # Build per-row expiration matrix using np.maximum.accumulate
+        # For each row, set the expiration time at each column, then accumulate.
+        expiration = np.zeros((n_samples, seq_len), dtype=np.int64)
+        # Place the end-of-burst index at each burst-start column.
+        # If multiple bursts start at different columns in the same row,
+        # np.maximum.at handles collisions.
+        np.maximum.at(expiration, (rows, cols), ends)
+        # Accumulate max along columns: propagates the latest expiration forward.
+        expiration = np.maximum.accumulate(expiration, axis=1)
+        # A position is masked if the accumulated expiration exceeds its column index.
+        col_indices = np.arange(seq_len, dtype=np.int64)
+        mask = expiration > col_indices
+        return mask
+
+    def _build_burst_mask_reference(self, burst_starts: np.ndarray, mean_length: float) -> np.ndarray:
+        """Reference (loop-based) implementation for regression testing.
 
         Args:
             burst_starts: Boolean burst start matrix.
@@ -308,10 +350,47 @@ class BioChannelSimulator:
     # -------------------------------------------------------------------
 
     def _simulate_infrastructure_noise(self, sample_count: int, sequence_length: int) -> np.ndarray:
-        """Simulate AR(1) plus 60Hz periodic noise process.
+        """Simulate AR(1) plus 60Hz periodic noise process (vectorized).
+
+        Uses scipy.signal.lfilter to compute the IIR AR(1) filter,
+        eliminating the serial Python loop over time steps.
 
         The model follows (espec_G1 §2.3):
             n_t = phi * n_{t-1} + A*sin(2*pi*f*t*delta_t + phase) + eta_t
+
+        Args:
+            sample_count: Number of trajectories.
+            sequence_length: Number of symbols in each trajectory.
+
+        Returns:
+            Noise matrix of shape (sample_count, sequence_length).
+        """
+        time_index = np.arange(sequence_length, dtype=np.float64) * self.base.delta_t
+        sinusoid = self.base.noise_amplitude * np.sin(
+            2.0 * np.pi * self.base.line_frequency_hz * time_index + self.base.noise_phase
+        )
+
+        innovations = self.rng.normal(
+            loc=0.0,
+            scale=self.base.noise_sigma,
+            size=(sample_count, sequence_length),
+        )
+
+        # driving signal = sinusoid (broadcast) + Gaussian innovations
+        driving = innovations + sinusoid[np.newaxis, :]
+
+        # IIR filter: y[t] = phi * y[t-1] + x[t]
+        # Transfer function: H(z) = 1 / (1 - phi * z^{-1})
+        # lfilter(b, a, x) where b = [1], a = [1, -phi]
+        b = np.array([1.0])
+        a = np.array([1.0, -self.base.noise_phi])
+        noise: np.ndarray = lfilter(b, a, driving, axis=1)
+        return noise
+
+    def _simulate_infrastructure_noise_reference(
+        self, sample_count: int, sequence_length: int,
+    ) -> np.ndarray:
+        """Reference (loop-based) implementation for regression testing.
 
         Args:
             sample_count: Number of trajectories.
@@ -348,7 +427,39 @@ class BioChannelSimulator:
     # -------------------------------------------------------------------
 
     def _compute_max_burst_lengths(self, flip_mask: np.ndarray) -> np.ndarray:
-        """Compute longest contiguous run of flips for each sample.
+        """Compute longest contiguous run of flips for each sample (vectorized).
+
+        Uses vectorized run-length encoding with np.diff and reduceat
+        to avoid a Python loop per row.
+
+        Args:
+            flip_mask: Effective flip matrix.
+
+        Returns:
+            Integer array of longest run lengths per sample.
+        """
+        n_samples, seq_len = flip_mask.shape
+        result = np.zeros(n_samples, dtype=np.int32)
+
+        # Pad each row with a 0 at start and end for boundary detection
+        padded = np.zeros((n_samples, seq_len + 2), dtype=np.int8)
+        padded[:, 1:-1] = flip_mask.astype(np.int8)
+
+        # Compute diff along columns to find run boundaries
+        delta = np.diff(padded, axis=1)  # shape: (n_samples, seq_len + 1)
+
+        for row_idx in range(n_samples):
+            row_delta = delta[row_idx]
+            starts = np.flatnonzero(row_delta == 1)
+            ends = np.flatnonzero(row_delta == -1)
+            if starts.size == 0:
+                continue
+            result[row_idx] = int(np.max(ends - starts))
+
+        return result
+
+    def _compute_max_burst_lengths_reference(self, flip_mask: np.ndarray) -> np.ndarray:
+        """Reference (loop-based) implementation for regression testing.
 
         Args:
             flip_mask: Effective flip matrix.

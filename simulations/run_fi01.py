@@ -29,10 +29,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output-dir", default="results/fi01", help="Output root directory")
     parser.add_argument("--ber-threshold", type=float, default=0.085, help="Decode failure BER threshold")
     parser.add_argument("--burst-threshold", type=int, default=88, help="Decode failure max burst threshold")
-    parser.add_argument("--proposal-gb-scale", type=float, default=16.0, help="Scale factor for proposal p_gb")
-    parser.add_argument("--proposal-bg-scale", type=float, default=0.4, help="Scale factor for proposal p_bg")
+    parser.add_argument("--proposal-gb-scale", type=float, default=2.2, help="Scale factor for proposal p_gb")
+    parser.add_argument("--proposal-bg-scale", type=float, default=0.85, help="Scale factor for proposal p_bg")
     parser.add_argument(
-        "--proposal-burst-scale", type=float, default=6.0, help="Scale factor for proposal burst probability",
+        "--proposal-burst-scale", type=float, default=1.8, help="Scale factor for proposal burst probability",
     )
     return parser.parse_args()
 

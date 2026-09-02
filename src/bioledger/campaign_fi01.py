@@ -18,6 +18,7 @@ with G1 go/no-go verdict per Framework v8.0 §7.
 
 from __future__ import annotations
 
+import argparse
 import csv
 import gc
 import json
@@ -64,16 +65,64 @@ DEFAULT_BETA_COMPONENTS: dict[str, float] = {
     "chave": 5e-8,
     "adversarial": 1e-7,
 }
+# modelo_ameacas §5.2: k_j = 0.1 uniform for all components
 DEFAULT_COUPLING_COEFFICIENTS: dict[str, float] = {
-    "substrato": 0.15,
-    "amostra": 0.10,
-    "pipeline": 0.20,
-    "modelo": 0.25,
-    "chave": 0.05,
-    "adversarial": 0.10,
+    "substrato": 0.1,
+    "amostra": 0.1,
+    "pipeline": 0.1,
+    "modelo": 0.1,
+    "chave": 0.1,
+    "adversarial": 0.1,
 }
-DEFAULT_N_NODES: int = 10
-DEFAULT_RHO_FLOOR: float = 0.01
+# modelo_ameacas §5.2: rho_floor = 0.05
+DEFAULT_RHO_FLOOR: float = 0.05
+
+# DEFAULT_N_NODES: largest integer N such that N_eff/N >= 0.8
+# under the corrected rho_floor and k_j with DEFAULT_BETA_COMPONENTS.
+# Computed programmatically (not hardcoded) at module load time.
+_rho_bar_default = calculate_rho_bar(
+    beta_components=DEFAULT_BETA_COMPONENTS,
+    coupling_coefficients=DEFAULT_COUPLING_COEFFICIENTS,
+    rho_floor=DEFAULT_RHO_FLOOR,
+)
+
+
+def _compute_max_n_for_neff_ratio(
+    rho_bar: float,
+    min_ratio: float = 0.8,
+) -> int:
+    """Find largest integer N where N_eff/N >= min_ratio.
+
+    N_eff/N = 1 / (1 + (N-1) * rho_bar) >= min_ratio
+    => N <= 1 + (1/min_ratio - 1) / rho_bar
+
+    Verified at module load:
+        N=5: N_eff/N = 0.8333331111 >= 0.8 (PASS)
+        N=6: N_eff/N = 0.7999997440 <  0.8 (FAIL)
+
+    Args:
+        rho_bar: Residual correlation.
+        min_ratio: Minimum N_eff/N ratio threshold.
+
+    Returns:
+        Largest integer N satisfying the constraint.
+    """
+    if rho_bar <= 0.0:
+        # No correlation => N_eff = N for any N; return a large sentinel.
+        return 1000
+    max_n_real = 1.0 + (1.0 / min_ratio - 1.0) / rho_bar
+    # Floor to integer; then verify the floor actually satisfies the constraint.
+    candidate = int(max_n_real)
+    if candidate < 1:
+        return 1
+    # Guard: verify the candidate actually passes (no float rounding surprise).
+    n_eff = calculate_n_eff(candidate, rho_bar)
+    if n_eff / candidate < min_ratio:
+        candidate -= 1  # pragma: no cover
+    return max(candidate, 1)
+
+
+DEFAULT_N_NODES: int = _compute_max_n_for_neff_ratio(_rho_bar_default)
 
 # 7 epsilon domain names for budget tracking
 _EPSILON_DOMAINS = (
@@ -112,10 +161,84 @@ def _update_accumulator(
     result: Any,
     checkpoint_interval: int,
 ) -> None:
-    """Update accumulator with a single batch of results.
+    """Update accumulator with a single batch of results (vectorized).
 
-    Uses Welford's online algorithm for numerically stable
-    mean and variance computation.
+    Uses a vectorized rank-1 batch Welford merge that is numerically
+    equivalent to the sequential per-sample algorithm.  The batch mean
+    and M2 are computed with numpy, then merged into the running
+    accumulator using the parallel/pairwise Welford identity:
+
+        delta   = batch_mean - acc.mean
+        new_mean = (n_a * acc.mean + n_b * batch_mean) / (n_a + n_b)
+        new_m2   = acc.m2 + batch_m2 + delta^2 * n_a * n_b / (n_a + n_b)
+
+    Checkpoints are emitted at the correct count boundaries after
+    the batch is absorbed.
+
+    Args:
+        acc: Accumulator to update in-place.
+        decode_fail: Binary decode failure indicators for this batch.
+        weights: IS likelihood-ratio weights for this batch.
+        result: ChannelSimulationResult for epsilon domain extraction.
+        checkpoint_interval: Interval for convergence checkpoints.
+    """
+    weighted = decode_fail.astype(np.float64) * weights
+
+    # ESS accumulators
+    acc.sum_w += float(np.sum(weights))
+    acc.sum_w2 += float(np.sum(weights ** 2))
+
+    # Proposal fail count
+    acc.fail_count += int(np.sum(decode_fail))
+
+    # Per-domain weighted sums
+    for domain in _EPSILON_DOMAINS:
+        domain_arr = getattr(result, domain)
+        acc.eps_sums[domain] += float(np.sum(domain_arr.astype(np.float64) * weights))
+
+    # Vectorized batch Welford merge
+    n_b = weighted.shape[0]
+    if n_b == 0:
+        return
+
+    batch_mean = float(np.mean(weighted))
+    # M2 for the batch (sum of squared deviations from batch mean)
+    batch_m2 = float(np.sum((weighted - batch_mean) ** 2))
+
+    n_a = acc.count
+    if n_a == 0:
+        # First batch: initialize directly
+        acc.count = n_b
+        acc.mean = batch_mean
+        acc.m2 = batch_m2
+    else:
+        # Parallel Welford merge
+        n_ab = n_a + n_b
+        delta = batch_mean - acc.mean
+        new_mean = (n_a * acc.mean + n_b * batch_mean) / n_ab
+        new_m2 = acc.m2 + batch_m2 + delta * delta * n_a * n_b / n_ab
+        acc.count = n_ab
+        acc.mean = new_mean
+        acc.m2 = new_m2
+
+    # Emit convergence checkpoints at the correct boundaries
+    # Find which checkpoint(s) were crossed by absorbing this batch.
+    first_new = n_a + 1
+    last_new = acc.count
+    # First checkpoint index at or after first_new
+    first_cp = ((first_new + checkpoint_interval - 1) // checkpoint_interval) * checkpoint_interval
+    for cp in range(first_cp, last_new + 1, checkpoint_interval):
+        _emit_checkpoint(acc)
+
+
+def _update_accumulator_reference(
+    acc: _OnlineAccumulator,
+    decode_fail: np.ndarray,
+    weights: np.ndarray,
+    result: Any,
+    checkpoint_interval: int,
+) -> None:
+    """Reference (loop-based) Welford implementation for regression testing.
 
     Args:
         acc: Accumulator to update in-place.
@@ -264,84 +387,82 @@ class FI01Campaign:
         # -----------------------------------------------------------
         acc = _OnlineAccumulator()
         samples_csv_path = result_dir / "fi01_samples.csv"
-        csv_handle = samples_csv_path.open("w", newline="", encoding="utf-8")
-        csv_writer = csv.writer(csv_handle)
-        csv_writer.writerow([
-            "sample_id", "decode_fail", "bit_error_rate",
-            "max_burst_length", "bad_state_fraction", "noise_rms",
-            "weight", "log_weight", "weighted_indicator",
-            "eps_ch", "eps_sync", "eps_ver",
-        ])
+        with samples_csv_path.open("w", newline="", encoding="utf-8") as csv_handle:
+            csv_writer = csv.writer(csv_handle)
+            csv_writer.writerow([
+                "sample_id", "decode_fail", "bit_error_rate",
+                "max_burst_length", "bad_state_fraction", "noise_rms",
+                "weight", "log_weight", "weighted_indicator",
+                "eps_ch", "eps_sync", "eps_ver",
+            ])
 
-        processed = 0
-        batch_idx = 0
-        base_seed = self.simulation_parameters.seed
+            processed = 0
+            batch_idx = 0
+            base_seed = self.simulation_parameters.seed
 
-        n_batches = (total_samples + self.batch_size - 1) // self.batch_size
+            n_batches = (total_samples + self.batch_size - 1) // self.batch_size
 
-        while processed < total_samples:
-            batch_n = min(self.batch_size, total_samples - processed)
+            while processed < total_samples:
+                batch_n = min(self.batch_size, total_samples - processed)
 
-            # Deterministic per-batch seed for reproducibility
-            batch_seed = base_seed + batch_idx
+                # Deterministic per-batch seed for reproducibility
+                batch_seed = base_seed + batch_idx
 
-            batch_sim_params = SimulationParameters(
-                sample_count=batch_n,
-                sequence_length=seq_len,
-                decode_fail_ber_threshold=self.simulation_parameters.decode_fail_ber_threshold,
-                decode_fail_burst_threshold=self.simulation_parameters.decode_fail_burst_threshold,
-                checkpoint_interval=checkpoint_interval,
-                seed=batch_seed,
-            ).normalized()
+                batch_sim_params = SimulationParameters(
+                    sample_count=batch_n,
+                    sequence_length=seq_len,
+                    decode_fail_ber_threshold=self.simulation_parameters.decode_fail_ber_threshold,
+                    decode_fail_burst_threshold=self.simulation_parameters.decode_fail_burst_threshold,
+                    checkpoint_interval=checkpoint_interval,
+                    seed=batch_seed,
+                ).normalized()
 
-            simulator = BioChannelSimulator(
-                base_parameters=self.base_parameters,
-                proposal_parameters=self.proposal_parameters,
-                seed=batch_seed,
-            )
-            result = simulator.simulate_batch(batch_sim_params)
+                simulator = BioChannelSimulator(
+                    base_parameters=self.base_parameters,
+                    proposal_parameters=self.proposal_parameters,
+                    seed=batch_seed,
+                )
+                result = simulator.simulate_batch(batch_sim_params)
 
-            # Stream CSV rows for this batch
-            weighted_ind = result.decode_fail.astype(np.float64) * result.weights
-            for sid in range(batch_n):
-                csv_writer.writerow([
-                    processed + sid,
-                    int(result.decode_fail[sid]),
-                    float(result.bit_error_rate[sid]),
-                    int(result.max_burst_length[sid]),
-                    float(result.bad_state_fraction[sid]),
-                    float(result.noise_rms[sid]),
-                    float(result.weights[sid]),
-                    float(result.log_weights[sid]),
-                    float(weighted_ind[sid]),
-                    int(result.epsilon_ch[sid]),
-                    int(result.epsilon_sync[sid]),
-                    int(result.epsilon_ver[sid]),
-                ])
+                # Stream CSV rows for this batch
+                weighted_ind = result.decode_fail.astype(np.float64) * result.weights
+                for sid in range(batch_n):
+                    csv_writer.writerow([
+                        processed + sid,
+                        int(result.decode_fail[sid]),
+                        float(result.bit_error_rate[sid]),
+                        int(result.max_burst_length[sid]),
+                        float(result.bad_state_fraction[sid]),
+                        float(result.noise_rms[sid]),
+                        float(result.weights[sid]),
+                        float(result.log_weights[sid]),
+                        float(weighted_ind[sid]),
+                        int(result.epsilon_ch[sid]),
+                        int(result.epsilon_sync[sid]),
+                        int(result.epsilon_ver[sid]),
+                    ])
 
-            # Accumulate sufficient statistics
-            _update_accumulator(
-                acc, result.decode_fail, result.weights,
-                result, checkpoint_interval,
-            )
+                # Accumulate sufficient statistics
+                _update_accumulator(
+                    acc, result.decode_fail, result.weights,
+                    result, checkpoint_interval,
+                )
 
-            processed += batch_n
-            batch_idx += 1
+                processed += batch_n
+                batch_idx += 1
 
-            # Progress reporting
-            pct = 100.0 * processed / total_samples
-            print(
-                f"  [FI-01] Batch {batch_idx}/{n_batches} done "
-                f"({processed:,}/{total_samples:,} samples, {pct:.1f}%)",
-                file=sys.stderr,
-                flush=True,
-            )
+                # Progress reporting
+                pct = 100.0 * processed / total_samples
+                print(
+                    f"  [FI-01] Batch {batch_idx}/{n_batches} done "
+                    f"({processed:,}/{total_samples:,} samples, {pct:.1f}%)",
+                    file=sys.stderr,
+                    flush=True,
+                )
 
-            # Release batch memory
-            del result, simulator, weighted_ind, batch_sim_params
-            gc.collect()
-
-        csv_handle.close()
+                # Release batch memory
+                del result, simulator, weighted_ind, batch_sim_params
+                gc.collect()
 
         # Emit final checkpoint if not already at a boundary
         if acc.count % checkpoint_interval != 0:
@@ -579,3 +700,72 @@ def build_default_campaign(seed: int = 20260421, batch_size: int = DEFAULT_BATCH
     proposal = ImportanceProposal.from_base(base)
     simulation = SimulationParameters(seed=seed).normalized()
     return FI01Campaign(base, proposal, simulation, batch_size=batch_size)
+
+
+def main(argv: list[str] | None = None) -> int:
+    """CLI entry point for FI-01 campaign execution.
+
+    Reuses the argument parsing logic from ``simulations/run_fi01.py``
+    and returns the real G1 gate verdict as exit code.
+
+    Args:
+        argv: Command-line arguments. Uses ``sys.argv[1:]`` when *None*.
+
+    Returns:
+        0 if the G1 gate verdict is GO, 1 otherwise.
+    """
+    parser = argparse.ArgumentParser(description="Run FI-01 burst-error campaign")
+    parser.add_argument("--samples", type=int, default=25000, help="Number of sampled sequences")
+    parser.add_argument("--batch-size", type=int, default=10000, help="Samples per batch (memory control)")
+    parser.add_argument("--length", type=int, default=1024, help="Sequence length")
+    parser.add_argument("--checkpoint", type=int, default=500, help="Convergence checkpoint interval")
+    parser.add_argument("--seed", type=int, default=20260421, help="Random seed")
+    parser.add_argument("--output-dir", default="results/fi01", help="Output root directory")
+    parser.add_argument("--ber-threshold", type=float, default=0.085, help="Decode failure BER threshold")
+    parser.add_argument("--burst-threshold", type=int, default=88, help="Decode failure max burst threshold")
+    parser.add_argument("--proposal-gb-scale", type=float, default=2.2, help="Scale factor for proposal p_gb")
+    parser.add_argument("--proposal-bg-scale", type=float, default=0.85, help="Scale factor for proposal p_bg")
+    parser.add_argument(
+        "--proposal-burst-scale", type=float, default=1.8, help="Scale factor for proposal burst probability",
+    )
+    args = parser.parse_args(argv)
+
+    base = ChannelParameters().normalized()
+    proposal = ImportanceProposal.from_base(
+        base=base,
+        gb_scale=args.proposal_gb_scale,
+        bg_scale=args.proposal_bg_scale,
+        burst_scale=args.proposal_burst_scale,
+    )
+    simulation = SimulationParameters(
+        sample_count=args.samples,
+        sequence_length=args.length,
+        decode_fail_ber_threshold=args.ber_threshold,
+        decode_fail_burst_threshold=args.burst_threshold,
+        checkpoint_interval=args.checkpoint,
+        seed=args.seed,
+    ).normalized()
+
+    campaign = FI01Campaign(
+        base_parameters=base,
+        proposal_parameters=proposal,
+        simulation_parameters=simulation,
+        batch_size=args.batch_size,
+    )
+
+    print(
+        f"[FI-01] Starting campaign: {args.samples:,} samples "
+        f"in batches of {args.batch_size:,} "
+        f"(seq_len={args.length})",
+        file=sys.stderr,
+        flush=True,
+    )
+
+    summary = campaign.run(args.output_dir)
+
+    print(json.dumps(summary, indent=2))  # noqa: T201
+
+    # Return real G1 gate verdict
+    if summary["g1_verdict"]["g1_go"] is True:
+        return 0
+    return 1
