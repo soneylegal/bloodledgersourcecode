@@ -298,6 +298,7 @@ def g1_verdict(
     n_eff: float,
     n_nodes: int,
     beta_shared: float,
+    *,
     ess_min: float = 0.2,
     r_target: float = 0.05,
 ) -> dict[str, Any]:
