@@ -227,7 +227,7 @@ def _update_accumulator(
     last_new = acc.count
     # First checkpoint index at or after first_new
     first_cp = ((first_new + checkpoint_interval - 1) // checkpoint_interval) * checkpoint_interval
-    for cp in range(first_cp, last_new + 1, checkpoint_interval):
+    for _cp in range(first_cp, last_new + 1, checkpoint_interval):
         _emit_checkpoint(acc)
 
 
@@ -763,7 +763,7 @@ def main(argv: list[str] | None = None) -> int:
 
     summary = campaign.run(args.output_dir)
 
-    print(json.dumps(summary, indent=2))  # noqa: T201
+    print(json.dumps(summary, indent=2))
 
     # Return real G1 gate verdict
     if summary["g1_verdict"]["g1_go"] is True:

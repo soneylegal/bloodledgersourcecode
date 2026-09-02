@@ -21,7 +21,6 @@ from __future__ import annotations
 import os
 import tempfile
 import unittest
-from copy import deepcopy
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -34,7 +33,6 @@ from bioledger.campaign_fi01 import (
     DEFAULT_RHO_FLOOR,
     FI01Campaign,
     _OnlineAccumulator,
-    _emit_checkpoint,
     _update_accumulator,
     _update_accumulator_reference,
     main,
@@ -49,7 +47,6 @@ from bioledger.statistics import (
     g1_verdict,
     importance_sampling_estimate,
 )
-
 
 # ═══════════════════════════════════════════════════════════════════════
 # 1. VECTORIZATION REGRESSION TESTS (Task 4)
@@ -100,12 +97,13 @@ class MaxBurstLengthVectorizationTest(unittest.TestCase):
         """Vectorized max burst lengths match loop reference for 3 seeds."""
         base = ChannelParameters().normalized()
         proposal = ImportanceProposal.from_base(base)
+        flip_probability = 0.15
 
         for seed in _REGRESSION_SEEDS:
             with self.subTest(seed=seed):
                 sim = BioChannelSimulator(base, proposal, seed=seed)
                 rng = np.random.default_rng(seed)
-                flip_mask = rng.random((128, 512)) < 0.15
+                flip_mask = rng.random((128, 512)) < flip_probability
                 result_v = sim._compute_max_burst_lengths(flip_mask)
                 result_r = sim._compute_max_burst_lengths_reference(flip_mask)
                 np.testing.assert_array_equal(result_v, result_r)
@@ -177,7 +175,7 @@ class WelfordVectorizationTest(unittest.TestCase):
                 acc_v = _OnlineAccumulator()
                 _update_accumulator(acc_v, decode_fail, weights, result, checkpoint_interval)
 
-                # Reference (sequential)
+                # Sequential update with reference accumulator
                 acc_r = _OnlineAccumulator()
                 _update_accumulator_reference(acc_r, decode_fail, weights, result, checkpoint_interval)
 
@@ -276,7 +274,7 @@ class BurstMaskContiguityTest(unittest.TestCase):
             starts = np.flatnonzero(transitions == 1)
             ends = np.flatnonzero(transitions == -1)
             # Each span between start and end must be all-True
-            for s, e in zip(starts, ends):
+            for s, e in zip(starts, ends, strict=False):
                 self.assertTrue(
                     np.all(row[s:e]),
                     f"Non-contiguous burst at row {row_idx}, span [{s}, {e})",
@@ -335,7 +333,8 @@ class BoundaryConditionsTest(unittest.TestCase):
         result = sim.simulate_batch(sim_params)
         # With p_gb clamped to 1e-12, practically all states stay good.
         # bad_state_fraction should be very close to 0.
-        self.assertTrue(np.all(result.bad_state_fraction < 0.01))
+        max_bad_fraction = 0.01
+        self.assertTrue(np.all(result.bad_state_fraction < max_bad_fraction))
 
     def test_n_nodes_1(self) -> None:
         """N_eff should equal 1.0 when N_nodes=1."""
@@ -346,7 +345,7 @@ class BoundaryConditionsTest(unittest.TestCase):
 
     def test_all_beta_zero(self) -> None:
         """When all beta=0, rho_bar should equal rho_floor."""
-        zero_beta = {k: 0.0 for k in DEFAULT_BETA_COMPONENTS}
+        zero_beta = dict.fromkeys(DEFAULT_BETA_COMPONENTS, 0.0)
         rho = calculate_rho_bar(
             zero_beta, DEFAULT_COUPLING_COEFFICIENTS, rho_floor=0.05,
         )
