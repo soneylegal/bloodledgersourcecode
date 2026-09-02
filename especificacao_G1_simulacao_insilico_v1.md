@@ -12,8 +12,8 @@ Objetivo primario:
 
 Metas de referencia (alinhadas ao Manual v8.0):
 
-- $UCB_{1-\alpha}(P_{UE}(T^*)) \le \epsilon_{target}$
-- $LCB_{1-\alpha}(1-P_{unavail}(T^*)) \ge A_{target}$
+- $UCB_{1-\alpha}(P_{UE}(T^{\ast})) \le \epsilon_{target}$
+- $LCB_{1-\alpha}(1-P_{unavail}(T^{\ast})) \ge A_{target}$
 - $N_{eff} \ge 0.8N$
 - $UCB_{1-\alpha}(\beta_{shared}) \le 10^{-6}$
 
@@ -254,8 +254,8 @@ Valor nominal congelado em G0: $ESS_{min} = 0.2$ (20% do $N$ total, limiar para 
 
 4. Todas as metas de gate satisfeitas simultaneamente:
 
-- $UCB_{1-\alpha}(P_{UE}(T^*)) \le \epsilon_{target}$
-- $LCB_{1-\alpha}(1-P_{unavail}(T^*)) \ge A_{target}$
+- $UCB_{1-\alpha}(P_{UE}(T^{\ast})) \le \epsilon_{target}$
+- $LCB_{1-\alpha}(1-P_{unavail}(T^{\ast})) \ge A_{target}$
 - $UCB_{1-\alpha}(\beta_{shared}) \le 10^{-6}$
 - $N_{eff} \ge 0.8N$
 

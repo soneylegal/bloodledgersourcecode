@@ -136,7 +136,7 @@ combine-as-imports = true
 
 # ── Mypy (Strict Static Typing) ─────────────────────────────────────
 [tool.mypy]
-python_version = "3.10"
+python_version = "3.12"
 mypy_path = "src"
 packages = ["bioledger"]
 strict = true

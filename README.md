@@ -27,8 +27,8 @@ No Verificador Híbrido (Lógica Molecular + ZKP In-Silico), a camada física us
 Em vez de prometer erro zero, o projeto estabelece SLA com limites probabilísticos auditáveis:
 
 $$
-UCB_{1-\alpha}(P_{UE}(T^*)) \le \epsilon_{target}, \quad
-LCB_{1-\alpha}(1-P_{unavail}(T^*)) \ge A_{target}, \quad
+UCB_{1-\alpha}(P_{UE}(T^{\ast})) \le \epsilon_{target}, \quad
+LCB_{1-\alpha}(1-P_{unavail}(T^{\ast})) \ge A_{target}, \quad
 N_{eff} \ge 0.8N
 $$
 

@@ -155,7 +155,7 @@ onde $N$ e tamanho populacional e $I$ integridade media do payload.
 Com candidato de Lyapunov:
 
 $$
-V(N,I)=(N-N^*)^2 + w(I-I^*)^2
+V(N,I)=(N-N^{\ast})^2 + w(I-I^{\ast})^2
 $$
 
 estabilidade local requer, em primeira ordem:
@@ -188,7 +188,7 @@ O ponto ideal fica na regiao:
 Escolher vetor de controle $u$ (intensidade de scrubbing, sentinelas e verificacao) resolvendo:
 
 $$
-\min_{u}\; UCB_{1-\alpha}\big(P_{UE}(u,T^*)\big)
+\min_{u}\; UCB_{1-\alpha}\big(P_{UE}(u,T^{\ast})\big)
 $$
 
 sujeito a:
@@ -198,7 +198,7 @@ J_{base}+J_{sec}(u)+J_{scrub}(u) \le J_{ATP,disp}
 $$
 
 $$
-N(u,T^*) \ge N_{min}
+N(u,T^{\ast}) \ge N_{min}
 $$
 
 $$
@@ -208,7 +208,7 @@ $$
 e adicionando restricao formal de liveness/disponibilidade:
 
 $$
-LCB_{1-\alpha}(1-P_{unavail}(u,T^*)) \ge A_{target}
+LCB_{1-\alpha}(1-P_{unavail}(u,T^{\ast})) \ge A_{target}
 $$
 
 ## 6.2 Budget de erro vs budget energetico
